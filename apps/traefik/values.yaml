@@ -1,0 +1,29 @@
+ingressRoute:
+  dashboard:
+    enabled: true
+    entryPoints:
+      - web
+    matchRule: Host(`traefik-dashboard.apps.127.0.0.1.nip.io`)
+providers:
+  kubernetesCRD:
+    enabled: true
+  kubernetesGateway:
+    enabled: true
+gateway:
+  listeners:
+    web:
+      namespacePolicy:
+        from: All
+service:
+  spec:
+    type: NodePort
+
+ports:
+  web:
+    nodePort: 30080
+  websecure:
+    nodePort: 30443
+
+logs:
+  access:
+    enabled: true
