@@ -1,0 +1,19 @@
+apiVersion: openclaw.rocks/v1alpha1
+kind: OpenClawInstance
+metadata:
+  name: my-agent
+spec:
+  autoUpdate:
+    enabled: true
+    checkInterval: 12h
+    backupBeforeUpdate: true
+    rollbackOnFailure: true
+    healthCheckTimeout: 15m
+  probes:
+    liveness:
+      enabled: false
+    readiness:
+      enabled: true
+      initialDelaySeconds: 15
+      periodSeconds: 30
+

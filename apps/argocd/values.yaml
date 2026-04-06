@@ -23,3 +23,82 @@ configs:
   params:
     server.insecure: true
     server.disable.auth: true
+  #cmp:
+  #  create: true        # creates the argocd-cmp-cm ConfigMap
+  #  plugins:
+  #    env-to-external-secret:
+  #      discover:
+  #        find:
+  #          glob: "**/.env.template"
+  #      generate:
+  #        command: [sh, -c]
+  #        args:
+  #          - |
+  #            FILE=".env.template"
+  #            vaults=$(sed -n 's/.*op:\/\/\([^/]*\)\/.*/\1/p' "$FILE" | sort -u)
+#
+  #            first=true
+  #            for vault in $vaults; do
+  #              [ "$first" = true ] && first=false || printf "\n---\n"
+  #              store=$(echo "$vault" | tr '[:upper:]' '[:lower:]')
+#
+  #              printf "apiVersion: external-secrets.io/v1\n"
+  #              printf "kind: ExternalSecret\n"
+  #              printf "metadata:\n"
+  #              printf "  name: %s-secrets\n" "$store"
+  #              printf "spec:\n"
+  #              printf "  refreshInterval: 1h\n"
+  #              printf "  secretStoreRef:\n"
+  #              printf "    name: %s\n" "$store"
+  #              printf "    kind: ClusterSecretStore\n"
+  #              printf "  target:\n"
+  #              printf "    name: %s-secrets\n" "$store"
+  #              printf "    template:\n"
+  #              printf "      engineVersion: v2\n"
+  #              printf "      data:\n"
+  #              printf "        %s: |\n" "$store"
+#
+  #              grep "op://${vault}/" "$FILE" | while IFS='=' read -r key value; do
+  #                printf "          %s={{ .%s }}\n" "$key" "$key"
+  #              done
+#
+  #              printf "  data:\n"
+#
+  #              grep "op://${vault}/" "$FILE" | while IFS='=' read -r key value; do
+  #                path="${value#op://}"
+  #                ref="${path#*/}"
+  #                printf "    - secretKey: %s\n" "$key"
+  #                printf "      remoteRef:\n"
+  #                printf "        conversionStrategy: Default\n"
+  #                printf "        decodingStrategy: None\n"
+  #                printf "        key: %s\n" "$ref"
+  #                printf "        metadataPolicy: None\n"
+  #                printf "        nullBytePolicy: Ignore\n"
+  #              done
+  #            done
+
+repoServer:
+  volumes:
+    - name: cmp-plugin
+      configMap:
+        name: argocd-cmp-cm
+    - name: cmp-tmp
+      emptyDir: {}
+
+  extraContainers:
+    - name: env-to-external-secret
+      command: [/var/run/argocd/argocd-cmp-server]
+      image: alpine:3
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999
+      volumeMounts:
+        - name: var-files
+          mountPath: /var/run/argocd
+        - name: plugins
+          mountPath: /home/argocd/cmp-server/plugins
+        - name: cmp-plugin
+          mountPath: /home/argocd/cmp-server/config/plugin.yaml
+          subPath: env-to-external-secret.yaml
+        - name: cmp-tmp
+          mountPath: /tmp

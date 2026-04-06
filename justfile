@@ -26,7 +26,10 @@ default:
     @just --list
 
 # 🚀 Provision a Kubernetes cluster with required dependencies
-provision: _check-kind _check-argocd _check-argocd-deploy argocd-url
+provision: _docker-start _check-kind _check_gateway-api-crds _check-argocd _check-argocd-deploy argocd-url
+
+_docker-start:
+    @docker desktop start
 
 _check-kind:
     #!/usr/bin/env bash
@@ -42,13 +45,33 @@ _kind-status-cluster:
     set -e
     cluster_status=`kind get clusters | grep {{ cluster_name }} | wc -l`
     echo $cluster_status
-
+     
 _kind-create-cluster:
     @kind create cluster --config={{ cluster_config }} --name={{ cluster_name }}
 
 _kind-update-context:
     @kubectl cluster-info --context kind-{{ cluster_name }}
     @kubectl config use-context kind-{{ cluster_name }}
+
+_check_gateway-api-crds:
+    #!/usr/bin/env bash
+    set -e
+    if [[ `just _status-gateway-api-crds` == "0" ]]; then \
+        just _add-gateway-api-crds
+    else
+        echo 'GatewayAPI CRDs is already installed! 🚀'
+    fi
+
+# Check whether the GatewayAPI CRDs are already applied
+_status-gateway-api-crds:
+    #!/usr/bin/env bash
+    set -e
+    gateway_status=`kubectl get gateways -A -o name 2>/dev/null | grep "traefik-gateway" | wc -l`
+    echo $gateway_status
+
+_add-gateway-api-crds:
+    @kubectl apply --server-side -f https://github.com/kubernetes-sigs/gateway-api/releases/latest/download/standard-install.yaml
+
 
 _repo-argocd:
     @just _add-helm-repo {{ argocd_repo_name }} {{ argocd_chart_url }}
