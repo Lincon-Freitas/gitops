@@ -1,0 +1,32 @@
+#apiVersion: argoproj.io/v1alpha1
+#kind: Application
+#metadata:
+#  name: backend
+#  namespace: argocd
+#  finalizers:
+#    - argoproj.io/resources-finalizer
+#spec:
+#  project: default
+#  sources:
+#  - repoURL: https://github.com/Lincon-Freitas/gitops
+#    targetRevision: feat/basic-configs
+#    path: kustomize/apps-manifest
+#    directory:
+#      recurse: true#
+
+#  - repoURL: https://github.com/Lincon-Freitas/my-app
+#    targetRevision: HEAD
+#    path: apps/backend
+#    plugin:
+#      name: env-to-external-secret#
+
+#  destination:
+#    server: https://kubernetes.default.svc
+#    namespace: backend
+#  syncPolicy:
+#    syncOptions:
+#    - CreateNamespace=true
+#    - ServerSideApply=true
+#    automated:
+#      selfHeal: true
+#      prune: false
